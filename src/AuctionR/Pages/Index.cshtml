@@ -4,3 +4,31 @@
     ViewData["Title"] = "Home page";
 }
 
+
+<div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Item</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var auction in Model.Auctions)
+            {
+                <tr scope="row">
+                    <td>@auction.Id</td>
+                    <td>@auction.Item.Name</td>
+                    <td>@auction.StartTime</td>
+                    <td>@auction.EndTime</td>
+                    <td>$@auction.StartingPrice</td>
+                    <td>$@auction.BidPrice</td>
+                    <td>TODO: Minimum Bid</td>
+                    <td><button type="button" disabled="disabled" class="btn">Bid</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

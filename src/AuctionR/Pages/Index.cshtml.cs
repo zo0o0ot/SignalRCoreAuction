@@ -9,6 +9,15 @@ namespace AuctionR.Pages
 {
     public class IndexModel : PageModel
     {
+        private readonly AuctionEngine _auctionEngine;
+
+        public IndexModel(AuctionEngine auctionEngine)
+        {
+            _auctionEngine = auctionEngine;
+        }
+
+        public IEnumerable<Auction> Auctions => _auctionEngine.Auctions;
+
         public void OnGet()
         {
 
