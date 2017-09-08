@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 
 namespace AuctionR
@@ -12,10 +13,12 @@ namespace AuctionR
         private Random _random = new Random();
         private ConcurrentDictionary<int, Auction> _auctions = new ConcurrentDictionary<int, Auction>();
         private Timer _timer;
+        private IHubContext<AuctionHub> _auctionHubContext;
 
-        public AuctionEngine(ILogger<AuctionEngine> logger, IApplicationLifetime appLifetime)
+        public AuctionEngine(ILogger<AuctionEngine> logger, IApplicationLifetime appLifetime, IHubContext<AuctionHub> auctionHubContext)
         {
             appLifetime.ApplicationStarted.Register(() => StartTimer());
+            _auctionHubContext = auctionHubContext;
             for (var i = 0; i < 5; i++)
             {
                 var auction = GenerateAuction();
@@ -34,7 +37,10 @@ namespace AuctionR
             {
                 if (auction.Value.EndTime < DateTime.Now)
                 {
-                    _auctions.TryRemove(auction.Key, out _);
+                    if (_auctions.TryRemove(auction.Key, out _))
+                    {
+                        _auctionHubContext.Clients.All.InvokeAsync("AuctionEnded", auction.Key);
+                    }
                 }
             }
         }
