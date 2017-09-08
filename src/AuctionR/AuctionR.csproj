@@ -11,6 +11,12 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\images\" />
-    <Folder Include="wwwroot\lib\" />
   </ItemGroup>
+
+ <Target Name="CopyClient" BeforeTargets="AfterBuild">
+   <ItemGroup>
+     <SignalRJSClientFiles Include="$(MSBuildThisFileDirectory)node_modules\@aspnet\signalr-client\dist\browser\*.js" />
+   </ItemGroup>
+   <Copy SourceFiles="@(SignalRJSClientFiles)" DestinationFolder="$(MSBuildThisFileDirectory)wwwroot\lib\signalr-client" />
+  </Target>
 </Project>
