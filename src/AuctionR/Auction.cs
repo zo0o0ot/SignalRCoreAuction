@@ -14,7 +14,6 @@ namespace AuctionR
             StartTime = startTime;
             EndTime = endTime;
             StartingPrice = startingPrice;
-            Reserve = reserve;
         }
 
         public int Id { get; }
@@ -22,7 +21,7 @@ namespace AuctionR
         public DateTimeOffset StartTime { get; }
         public DateTimeOffset EndTime { get; }
         public decimal StartingPrice { get; }
-        public decimal Reserve { get; }
         public decimal BidPrice { get; }
+        public bool Active { get; set; }
     }
 }

@@ -4,31 +4,130 @@
     ViewData["Title"] = "Home page";
 }
 
-
 <div>
-    <table class="table">
+    <table class="table" id="auction-table">
         <thead>
             <tr>
                 <th>Id</th>
                 <th>Item</th>
                 <th>Start Time</th>
                 <th>End Time</th>
+                <th>Starting price</th>
+                <th>Current Bid</th>
+                <th>Your Bid</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var auction in Model.Auctions)
-            {
-                <tr scope="row">
-                    <td>@auction.Id</td>
-                    <td>@auction.Item.Name</td>
-                    <td>@auction.StartTime</td>
-                    <td>@auction.EndTime</td>
-                    <td>$@auction.StartingPrice</td>
-                    <td>$@auction.BidPrice</td>
-                    <td>TODO: Minimum Bid</td>
-                    <td><button type="button" disabled="disabled" class="btn">Bid</button></td>
-                </tr>
-            }
         </tbody>
     </table>
+    <div id="error-banner" class="alert alert-danger" hidden="hidden" />
 </div>
+@section scripts
+{
+    <script language="javascript">
+        if (typeof Promise === 'undefined') {
+            document.write(
+                '<script type="text/javascript" src="lib/signalr-client/signalr-clientES5.min.js"><\/script>' +
+                '<script type="text/javascript" src="lib/signalr-client/signalr-msgpackprotocolES5.min.js"><\/script>');
+        }
+        else {
+            document.write(
+                '<script type="text/javascript" src="lib/signalr-client/signalr-client.min.js"><\/script>' +
+                '<script type="text/javascript" src="lib/signalr-client/signalr-msgpackprotocol.min.js"><\/script>');
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+
+            var name = window.prompt('Enter your name');
+            // TODO: enable specifying transport
+            var httpConnection = new signalR.HttpConnection('http://' + document.location.host + '/auction');
+            hubConnection = new signalR.HubConnection(httpConnection);
+
+            hubConnection.on('AddAuctions', function (auctions) {
+                console.log('AddAuctions', JSON.stringify(auctions));
+                auctions.forEach(function (auction) {
+                    appendAuction(auction);
+                });
+            });
+
+            hubConnection.on('AuctionStarted', function (auctionId) {
+                console.log('Auction is starting', JSON.stringify(auctionId));
+                var bidButton = document.getElementById('bid-button-' + auctionId);
+                if (bidButton) {
+                    bidButton.disabled = false;
+                }
+                setAuctionStatus(auctionId, 'active');
+            });
+
+            hubConnection.on('AuctionEnded', function (auctionId) {
+                console.log('AuctionEnded', auctionId);
+                var bidButton = document.getElementById('bid-button-' + auctionId);
+                if (bidButton) {
+                    bidButton.innerText = 'Delete';
+                    bidButton.className = 'btn btn-danger';
+                    bidButton.disabled = false;
+                }
+                setAuctionStatus(auctionId, 'ended');
+            });
+
+            hubConnection.start()
+                .then(function () { })
+                .catch(function (e) {
+                    showError('Starting the connection failed with error: ' + e.message);
+                });
+
+            hubConnection.onClosed = function (e) {
+                showError('Connection closed. ' + e);
+            };
+        });
+
+        function appendAuction(auction) {
+            var auctionRowId = 'auction-' + auction.Id;
+            if (document.getElementById(auctionRowId)) {
+                return;
+            }
+            var auctionTableBody = document.getElementById('auction-table').tBodies[0];
+            var row = auctionTableBody.insertRow(auctionTableBody.rows.length);
+            row.id = auctionRowId;
+            row.scope = "row";
+            row.insertCell(0).innerHTML = auction.Id;
+            row.insertCell(1).innerHTML = auction.Item.Name;
+            row.insertCell(2).innerHTML = formatDate(auction.StartTime);
+            row.insertCell(3).innerHTML = formatDate(auction.EndTime);
+            row.insertCell(4).innerHTML = formatPrice(auction.StartingPrice);
+            row.insertCell(5).innerHTML = '$' + auction.CurrentBid;
+            row.insertCell(6).innerHTML = '$' + '<input type="text" value="' + auction.CurrentBid + 1 + '" size="5" />';
+            row.insertCell(7).innerHTML = '<button id="bid-button-' + auction.Id + '" type="button" class="btn" disabled="' + !auction.Active + '"> Bid </button > ';
+            setAuctionStatus(auction.Id, auction.Active ? 'active' : 'pending');
+        }
+
+        function formatDate(date) {
+            return new Date(Date.parse(date)).toLocaleString();
+        }
+
+        function formatPrice(price) {
+            return price.toLocaleString('en-US', {
+                style: 'currency',
+                currency: 'USD',
+            });
+        }
+
+        function setAuctionStatus(auctionId, status) {
+            var auctionRow = document.getElementById('auction-' + auctionId);
+            if (auctionRow) {
+                auctionRow.className =
+                    status == 'pending' ? 'info' :
+                    status == 'active' ? 'success' :
+                        'primary';
+            }
+        }
+
+        function showError(errorMsg) {
+            var errorBanner = document.getElementById('error-banner');
+            errorBanner.hidden = false;
+            errorBanner.innerHTML = "<strong>" + errorMsg + "</strong>";
+        }
+
+    </script>
+}
